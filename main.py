@@ -2,11 +2,11 @@ import os
 import re
 
 import requests
-from github import Github
+from github import Github, GithubException
 
 
 # --- Extracción de URLs m3u8 ---
-def extract_m3u8(url: str, headers: dict = None) -> str | None:
+def extract_m3u8(url: str, headers: dict | None = None) -> str | None:
     """Accede a una URL y busca la primera URL m3u8 en el HTML/JS."""
     try:
         resp = requests.get(
@@ -17,8 +17,8 @@ def extract_m3u8(url: str, headers: dict = None) -> str | None:
         resp.raise_for_status()
         match = re.search(r'(https?://[^\s"\']+\.m3u8[^\s"\']*)', resp.text)
         return match.group(1) if match else None
-    except Exception as e:
-        print(f"Error al acceder a {url}: {e}")
+    except requests.RequestException as e:
+        print(f"Error al acceder a {url}: {type(e).__name__}: {e}")
         return None
 
 
@@ -50,7 +50,13 @@ def push_to_github(content: str, token: str, repo_name: str, file_path: str = "s
         existing = repo.get_contents(file_path)
         repo.update_file(file_path, "🔄 Actualizar streams.m3u", content, existing.sha)
         print(f"Fichero actualizado: {file_path}")
-    except Exception:
+    except GithubException as e:
+        if e.status != 404:
+            print(
+                f"Error al actualizar {file_path} en GitHub (status {e.status}): "
+                f"{type(e).__name__}: {e}"
+            )
+            raise
         repo.create_file(file_path, "✨ Crear streams.m3u", content)
         print(f"Fichero creado: {file_path}")
 
