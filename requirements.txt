@@ -1,4 +1,2 @@
-requests
 PyGithub
-beautifulsoup4
-playwright  # soporte futuro para páginas con renderizado JS
+playwright
